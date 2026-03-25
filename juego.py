@@ -168,10 +168,10 @@ def _bucle_principal(personaje, estado):
 
 
 def _comprobar_pausa(personaje, estado):
-    """Permite al jugador ver stats o inventario entre escenas."""
+    """Permite al jugador ver stats, inventario o equipamiento entre escenas."""
     from rich.prompt import Prompt
     ui.console.print()
-    ui.console.print("[dim](S) Ver estadísticas  (I) Inventario  (Enter) Continuar[/dim]")
+    ui.console.print("[dim](S) Estadisticas  (I) Inventario  (E) Equipamiento  (Enter) Continuar[/dim]")
     respuesta = Prompt.ask("[dim]>[/dim]", default="").strip().lower()
     if respuesta == "s":
         ui.mostrar_stats(personaje)
@@ -179,6 +179,8 @@ def _comprobar_pausa(personaje, estado):
     elif respuesta == "i":
         ui.mostrar_inventario(personaje)
         ui.pedir_continuar()
+    elif respuesta == "e":
+        ui.mostrar_equipamiento(personaje)
 
 
 # Fix import in juego.py

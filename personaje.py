@@ -160,6 +160,10 @@ class Personaje:
     enemigos_derrotados: int = 0
     decisiones_heroicas: int = 0
 
+    # Equipamiento
+    arma_equipada: str = ""  # nombre del arma equipada
+    puntos_pendientes: int = 0
+
     # Flags de historia
     flags: dict = field(default_factory=dict)
 
@@ -191,6 +195,44 @@ class Personaje:
     def mod_carisma(self) -> int:
         return (self.carisma - 10) // 2
 
+    @property
+    def mod_ataque(self) -> int:
+        return max(self.mod_fuerza, self.mod_destreza)
+
+    @property
+    def danio_min(self) -> int:
+        return max(1, 1 + self.mod_ataque)
+
+    @property
+    def danio_max(self) -> int:
+        return max(1, self.dado_danio + self.mod_ataque)
+
+    @property
+    def arma_actual(self):
+        for item in self.inventario:
+            if item.tipo == "arma" and item.nombre == self.arma_equipada:
+                return item
+        # Si no hay arma equipada, buscar la primera
+        for item in self.inventario:
+            if item.tipo == "arma":
+                self.arma_equipada = item.nombre
+                return item
+        return None
+
+    def armas_disponibles(self) -> list:
+        return [item for item in self.inventario if item.tipo == "arma"]
+
+    def equipar_arma(self, nombre: str) -> bool:
+        for item in self.inventario:
+            if item.tipo == "arma" and item.nombre == nombre:
+                self.arma_equipada = item.nombre
+                # Actualizar dado de daño según arma
+                dado = item.efecto.get("dado_danio", self.dado_danio)
+                if dado:
+                    self.dado_danio = dado
+                return True
+        return False
+
     def agregar_xp(self, cantidad: int) -> bool:
         self.experiencia += cantidad
         if self.experiencia >= self.xp_siguiente_nivel:
@@ -207,17 +249,8 @@ class Personaje:
         self.mp_max += 5
         self.mp_actual = self.mp_max
         self.habilidad_usos = 3
-
-        info = CLASES[self.clase]
-        stat_alto = max(
-            [("fuerza", info["fuerza"]), ("destreza", info["destreza"]),
-             ("inteligencia", info["inteligencia"])],
-            key=lambda x: x[1],
-        )[0]
-        setattr(self, stat_alto, getattr(self, stat_alto) + 2)
-        for s in ["fuerza", "destreza", "inteligencia", "constitucion", "sabiduria", "carisma"]:
-            if s != stat_alto:
-                setattr(self, s, getattr(self, s) + 1)
+        # Los puntos se asignan manualmente via UI
+        self.puntos_pendientes = 4
 
     def esta_vivo(self) -> bool:
         return self.hp_actual > 0
@@ -270,13 +303,15 @@ def crear_personaje(nombre: str, clase: str, rasgos: list) -> Personaje:
     )
 
     armas_iniciales = {
-        "Guerrero": Item("Espada Larga", "arma", "Una espada de acero bien balanceada", 50),
-        "Mago": Item("Báculo Arcano", "arma", "Un báculo imbuido de energía mágica", 40),
-        "Pícaro": Item("Dagas Gemelas", "arma", "Dos dagas ligeras perfectas para ataques rápidos", 35),
-        "Clérigo": Item("Maza Sagrada", "arma", "Una maza bendecida por los dioses", 40),
-        "Paladín": Item("Espada Bastarda", "arma", "Una espada con inscripciones sagradas", 60),
+        "Guerrero": Item("Espada Larga", "arma", "Una espada de acero bien balanceada", 50, {"dado_danio": 8}),
+        "Mago": Item("Báculo Arcano", "arma", "Un báculo imbuido de energía mágica", 40, {"dado_danio": 10}),
+        "Pícaro": Item("Dagas Gemelas", "arma", "Dos dagas ligeras para ataques rápidos", 35, {"dado_danio": 6}),
+        "Clérigo": Item("Maza Sagrada", "arma", "Una maza bendecida por los dioses", 40, {"dado_danio": 6}),
+        "Paladín": Item("Espada Bastarda", "arma", "Una espada con inscripciones sagradas", 60, {"dado_danio": 8}),
     }
-    p.inventario.append(armas_iniciales[clase])
+    arma = armas_iniciales[clase]
+    p.inventario.append(arma)
+    p.arma_equipada = arma.nombre
     p.inventario.append(
         Item("Poción de Salud", "pocion", "Restaura 25 HP", 15, {"curacion": 25})
     )

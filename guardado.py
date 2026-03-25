@@ -34,6 +34,8 @@ def guardar(personaje, estado: dict):
             "habilidad_costo_mp": personaje.habilidad_costo_mp,
             "enemigos_derrotados": personaje.enemigos_derrotados,
             "decisiones_heroicas": personaje.decisiones_heroicas,
+            "arma_equipada": personaje.arma_equipada,
+            "puntos_pendientes": personaje.puntos_pendientes,
             "flags": personaje.flags,
             "inventario": [
                 {
@@ -67,7 +69,8 @@ def cargar():
         for campo in ["nivel", "experiencia", "fuerza", "destreza", "inteligencia",
                       "constitucion", "sabiduria", "carisma", "hp_max", "hp_actual",
                       "mp_max", "mp_actual", "dado_danio", "armadura", "oro",
-                      "habilidad_usos", "enemigos_derrotados", "decisiones_heroicas"]:
+                      "habilidad_usos", "enemigos_derrotados", "decisiones_heroicas",
+                      "arma_equipada", "puntos_pendientes"]:
             setattr(personaje, campo, pd[campo])
 
         personaje.flags = pd.get("flags", {})

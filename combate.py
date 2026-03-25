@@ -84,20 +84,53 @@ def _turno_jugador(personaje, enemigo) -> str:
 
 
 def _ataque_jugador(personaje, enemigo):
-    from personaje import CLASES
     stat_ataque = max(personaje.fuerza, personaje.destreza)
     mod = (stat_ataque - 10) // 2
 
-    ataque = tirada_ataque(mod, enemigo.armadura)
+    # Si es boss, elegir parte del cuerpo
+    parte = None
+    armadura_objetivo = enemigo.armadura
+    mult_danio = 1.0
+    if enemigo.es_boss and enemigo.partes_cuerpo:
+        parte = ui.elegir_parte_cuerpo(enemigo)
+        armadura_objetivo = enemigo.armadura + parte.get("armadura_mod", 0)
+        mult_danio = parte.get("danio_mult", 1.0)
+
+    ataque = tirada_ataque(mod, armadura_objetivo)
     danio = None
     if ataque["impacto"]:
         danio = tirada_danio(personaje.dado_danio, mod, critico=ataque["critico"])
+        danio_final = int(danio["total"] * mult_danio)
+        danio["total"] = max(1, danio_final)
         enemigo.recibir_danio(danio["total"])
+
+        # Aplicar efecto de la parte del cuerpo
+        if parte and "efecto" in parte:
+            _aplicar_efecto_parte(parte, enemigo)
 
     ui.mostrar_resultado_ataque(ataque, danio, personaje.nombre)
     if danio:
         ui.console.print(f"  [red]{enemigo.nombre}: HP {enemigo.hp_actual}/{enemigo.hp_max}[/red]")
     ui.pausa_corta()
+
+
+def _aplicar_efecto_parte(parte, enemigo):
+    efecto = parte["efecto"]
+    if efecto == "destruir_filacteria":
+        enemigo.regenera = 0
+        enemigo.fase_2 = False
+        ui.panel_narrativa(
+            f"La filacteria se resquebraja! El cristal negro estalla en mil pedazos.\n\n"
+            f"{enemigo.nombre} ruge de dolor. Ya no puede regenerarse!",
+            titulo="Filacteria Destruida!",
+            color="gold1",
+        )
+    elif efecto == "reducir_armadura":
+        enemigo.armadura = max(8, enemigo.armadura - 3)
+        ui.console.print(f"  [green]Su armadura se debilita! (Armadura: {enemigo.armadura})[/green]")
+    elif efecto == "reducir_ataque":
+        enemigo.bonus_ataque = max(1, enemigo.bonus_ataque - 2)
+        ui.console.print(f"  [green]Sus ataques se debilitan! (Ataque: +{enemigo.bonus_ataque})[/green]")
 
 
 def _usar_habilidad(personaje, enemigo):

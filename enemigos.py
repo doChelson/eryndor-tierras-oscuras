@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import random
 
 
@@ -21,6 +21,9 @@ class Enemigo:
     danio_habilidad: int = 0
     fase_2: bool = False
     regenera: int = 0
+    es_boss: bool = False
+    # Partes del cuerpo: {nombre: {armadura_mod, danio_mult, efecto, descripcion}}
+    partes_cuerpo: dict = field(default_factory=dict)
 
     def esta_vivo(self) -> bool:
         return self.hp_actual > 0
@@ -93,6 +96,12 @@ def crear_enemigo(tipo: str) -> Enemigo:
             habilidad_especial="Puño Sísmico",
             habilidad_chance=0.25,
             danio_habilidad=20,
+            es_boss=True,
+            partes_cuerpo={
+                "Cuerpo": {"armadura_mod": 0, "danio_mult": 1.0, "desc": "Ataque normal al torso"},
+                "Cabeza": {"armadura_mod": 3, "danio_mult": 1.5, "desc": "Mas dificil, mas dano"},
+                "Cristales Oculares": {"armadura_mod": 5, "danio_mult": 1.0, "desc": "Punto debil: reduce su armadura", "efecto": "reducir_armadura"},
+            },
         ),
         # Arco 4
         "vampiro": Enemigo(
@@ -122,6 +131,13 @@ def crear_enemigo(tipo: str) -> Enemigo:
             danio_habilidad=28,
             fase_2=True,
             regenera=8,
+            es_boss=True,
+            partes_cuerpo={
+                "Cuerpo": {"armadura_mod": 0, "danio_mult": 1.0, "desc": "Ataque normal"},
+                "Cabeza": {"armadura_mod": 4, "danio_mult": 1.5, "desc": "Mas dificil, mas dano"},
+                "Filacteria (Collar)": {"armadura_mod": 6, "danio_mult": 1.0, "desc": "Destruye su regeneracion", "efecto": "destruir_filacteria"},
+                "Manos": {"armadura_mod": 2, "danio_mult": 0.8, "desc": "Reduce su ataque", "efecto": "reducir_ataque"},
+            },
         ),
     }
     return plantillas[tipo]

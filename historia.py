@@ -601,7 +601,7 @@ def escena_2_artefacto(personaje, estado):
     )
 
     personaje.inventario.append(
-        Item("Daga del Umbral", "arma", "Arma imbuida de magia oscura. +2 al daño.", 120, {"bonus_danio": 2})
+        Item("Daga del Umbral", "arma", "Arma imbuida de magia oscura. Dado d10.", 120, {"dado_danio": 10})
     )
     personaje.dado_danio = min(12, personaje.dado_danio + 1)
     personaje.agregar_xp(80)

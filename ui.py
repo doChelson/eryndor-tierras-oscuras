@@ -167,13 +167,20 @@ def mostrar_stats(personaje):
         )
     console.print(tabla_stats)
 
-    # Info adicional
+    # Arma y daño
     console.print()
+    arma = personaje.arma_actual
+    arma_nombre = arma.nombre if arma else "Puños"
     console.print(
-        f"  [gold1]Oro:[/gold1] [yellow]{personaje.oro} monedas[/yellow]   "
+        f"  [gold1]Arma equipada:[/gold1] [bold {color_clase}]{arma_nombre}[/bold {color_clase}]   "
+        f"[gold1]Dado de daño:[/gold1] [white]d{personaje.dado_danio}[/white]   "
+        f"[gold1]Dano estimado:[/gold1] [red]{personaje.danio_min} - {personaje.danio_max}[/red]"
+    )
+    console.print(
+        f"  [gold1]Armadura:[/gold1] [white]{personaje.armadura}[/white]   "
+        f"[gold1]Oro:[/gold1] [yellow]{personaje.oro} monedas[/yellow]   "
         f"[gold1]Habilidad:[/gold1] [{color_clase}]{personaje.habilidad_especial}[/{color_clase}] "
-        f"([dim]{personaje.habilidad_usos} usos[/dim])   "
-        f"[gold1]Armadura:[/gold1] {personaje.armadura}"
+        f"([dim]{personaje.habilidad_usos} usos[/dim])"
     )
 
     if personaje.rasgos:
@@ -285,7 +292,7 @@ def mostrar_resultado_ataque(ataque: dict, danio: dict = None, nombre_atacante: 
         padding=(1, 2),
         box=box.ROUNDED,
     ))
-    pausa(1.0)
+    pedir_continuar("Presiona Enter para continuar...")
 
 
 def mostrar_resultado_chequeo(chequeo: dict, nombre_stat: str, dificultad: int):
@@ -329,26 +336,64 @@ def mostrar_resultado_chequeo(chequeo: dict, nombre_stat: str, dificultad: int):
         box=box.DOUBLE_EDGE,
     ))
     console.print()
-    pausa(1.2)
+    pedir_continuar("Presiona Enter para continuar...")
 
 
 def mostrar_subida_nivel(personaje):
     limpiar()
     separador("gold1", "★  NIVEL SUPERIOR  ★")
     console.print()
-    console.print(Align.center(f"[bold gold1]¡{personaje.nombre} alcanza el Nivel {personaje.nivel}![/bold gold1]"))
+    console.print(Align.center(f"[bold gold1]{personaje.nombre} alcanza el Nivel {personaje.nivel}![/bold gold1]"))
     console.print()
-    for _ in range(3):
-        console.print(Align.center("[bold yellow]✦ ✦ ✦[/bold yellow]"))
-        time.sleep(0.3)
-    console.print()
-    console.print(f"  [green]HP máximo aumentado[/green]")
-    console.print(f"  [blue]MP máximo aumentado[/blue]")
-    console.print(f"  [yellow]Estadísticas mejoradas[/yellow]")
+    console.print(f"  [green]HP maximo aumentado a {personaje.hp_max}[/green]")
+    console.print(f"  [blue]MP maximo aumentado a {personaje.mp_max}[/blue]")
     console.print(f"  [cyan]Habilidad especial restaurada (3 usos)[/cyan]")
     console.print()
+
+    # Sistema de puntos
+    puntos = 4
+    stats_nombres = {
+        "1": ("fuerza", "Fuerza", "red"),
+        "2": ("destreza", "Destreza", "green"),
+        "3": ("inteligencia", "Inteligencia", "blue"),
+        "4": ("constitucion", "Constitucion", "orange3"),
+        "5": ("sabiduria", "Sabiduria", "yellow"),
+        "6": ("carisma", "Carisma", "magenta"),
+    }
+
+    while puntos > 0:
+        console.print(f"\n  [bold gold1]Tienes {puntos} punto(s) para distribuir.[/bold gold1]\n")
+
+        tabla = Table(box=box.ROUNDED, show_header=True, padding=(0, 2), border_style="gold1")
+        tabla.add_column("Opcion", width=8, justify="center")
+        tabla.add_column("Atributo", width=14)
+        tabla.add_column("Actual", width=8, justify="center")
+
+        for key, (attr, nombre, color) in stats_nombres.items():
+            valor = getattr(personaje, attr)
+            tabla.add_row(
+                f"[bold gold1]{key}[/bold gold1]",
+                f"[{color}]{nombre}[/{color}]",
+                f"[white]{valor}[/white]",
+            )
+        console.print(tabla)
+        console.print()
+
+        eleccion = Prompt.ask(
+            f"[bold gold1]Elige stat para +1[/bold gold1]",
+            choices=list(stats_nombres.keys()),
+        )
+        attr, nombre, color = stats_nombres[eleccion]
+        setattr(personaje, attr, getattr(personaje, attr) + 1)
+        puntos -= 1
+        limpiar()
+        separador("gold1", "★  NIVEL SUPERIOR  ★")
+        console.print(f"\n  [{color}]{nombre} +1! (ahora {getattr(personaje, attr)})[/{color}]")
+
+    personaje.puntos_pendientes = 0
+    console.print()
     separador("gold1")
-    pausa(1.0)
+    pedir_continuar()
 
 
 def mostrar_recompensa(xp: int, oro: int, item=None):
@@ -379,6 +424,101 @@ def mostrar_inventario(personaje):
         console.print(tabla)
     console.print(f"  [yellow]Oro:[/yellow] {personaje.oro} monedas")
     console.print()
+
+
+def mostrar_equipamiento(personaje):
+    """Pantalla para ver y cambiar arma equipada."""
+    limpiar()
+    separador("red", "Equipamiento")
+
+    armas = personaje.armas_disponibles()
+    if not armas:
+        console.print("[dim]  No tienes armas.[/dim]")
+        pedir_continuar()
+        return
+
+    arma_actual = personaje.arma_actual
+    console.print()
+
+    tabla = Table(box=box.ROUNDED, show_header=True, padding=(0, 2), border_style="red")
+    tabla.add_column("", width=5, justify="center")
+    tabla.add_column("Arma", width=22)
+    tabla.add_column("Dado", width=8, justify="center")
+    tabla.add_column("Descripcion", width=40)
+    tabla.add_column("Estado", width=12, justify="center")
+
+    for i, arma in enumerate(armas, 1):
+        dado = arma.efecto.get("dado_danio", "?")
+        equipada = "[bold green]Equipada[/bold green]" if arma.nombre == personaje.arma_equipada else "[dim]-[/dim]"
+        tabla.add_row(
+            f"[bold white]{i}[/bold white]",
+            f"[red]{arma.nombre}[/red]",
+            f"d{dado}",
+            f"[dim]{arma.descripcion}[/dim]",
+            equipada,
+        )
+
+    console.print(tabla)
+    console.print()
+    console.print(f"  [dim]0. Volver sin cambiar[/dim]")
+    console.print()
+
+    choices = ["0"] + [str(i) for i in range(1, len(armas) + 1)]
+    eleccion = Prompt.ask("[bold red]Equipar arma[/bold red]", choices=choices)
+
+    if eleccion != "0":
+        idx = int(eleccion) - 1
+        arma_elegida = armas[idx]
+        personaje.equipar_arma(arma_elegida.nombre)
+        console.print(f"\n  [bold green]{arma_elegida.nombre} equipada![/bold green]")
+        pausa(0.8)
+
+
+def elegir_parte_cuerpo(enemigo) -> dict:
+    """Muestra menú para elegir parte del cuerpo de un boss."""
+    limpiar()
+    console.print()
+    separador("red", f"Apuntar a {enemigo.nombre}")
+
+    partes = list(enemigo.partes_cuerpo.items())
+
+    tabla = Table(box=box.ROUNDED, show_header=True, padding=(0, 2), border_style="red")
+    tabla.add_column("", width=5, justify="center")
+    tabla.add_column("Parte", width=22)
+    tabla.add_column("Dificultad", width=12, justify="center")
+    tabla.add_column("Efecto", width=40)
+
+    for i, (nombre, info) in enumerate(partes, 1):
+        mod = info["armadura_mod"]
+        if mod == 0:
+            dif = "[green]Normal[/green]"
+        elif mod <= 3:
+            dif = "[yellow]Dificil[/yellow]"
+        else:
+            dif = "[red]Muy dificil[/red]"
+
+        mult = info.get("danio_mult", 1.0)
+        desc = info.get("desc", "")
+        if mult > 1.0:
+            desc += f" (x{mult} dano)"
+
+        tabla.add_row(
+            f"[bold white]{i}[/bold white]",
+            f"[bold white]{nombre}[/bold white]",
+            dif,
+            f"[dim]{desc}[/dim]",
+        )
+
+    console.print(tabla)
+    console.print()
+
+    choices = [str(i) for i in range(1, len(partes) + 1)]
+    eleccion = Prompt.ask("[bold red]Apuntar a[/bold red]", choices=choices)
+    idx = int(eleccion) - 1
+    nombre, info = partes[idx]
+    console.print(f"\n  [bold yellow]Apuntando a: {nombre}[/bold yellow]")
+    pausa(0.5)
+    return {"nombre": nombre, **info}
 
 
 def elegir_opcion(opciones: list, titulo: str = "¿Qué decides hacer?") -> int:
