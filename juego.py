@@ -58,18 +58,18 @@ def _crear_personaje():
     ui.console.print("[italic dim]¿Cómo se llama el héroe que dará vida a esta historia?[/italic dim]")
     nombre = ui.pedir_nombre()
 
-    # Quiz de personalidad
-    ui.limpiar()
-    ui.separador("gold1", "El Oráculo de Yar te hace preguntas...")
+    # Quiz de personalidad - pantalla propia para el intro
     ui.panel_narrativa(
         "Antes de embarcarte en tu aventura, el Oráculo de Yar desea conocerte. "
         "Responde con honestidad: las respuestas moldearán tu destino.",
         titulo="El Oráculo habla",
     )
+    ui.pedir_continuar()
 
     rasgos = []
     bonus_stats = {}
 
+    # Cada pregunta en su propia pantalla limpia
     total_preguntas = len(PREGUNTAS_PERSONALIDAD)
     for idx, pregunta_data in enumerate(PREGUNTAS_PERSONALIDAD, 1):
         ui.limpiar()
@@ -84,7 +84,6 @@ def _crear_personaje():
         bonus_stats[stat] = bonus_stats.get(stat, 0) + bonus
         if rasgo not in rasgos:
             rasgos.append(rasgo)
-        ui.pausa_corta()
 
     # Clase recomendada
     stat_dominante = max(bonus_stats, key=bonus_stats.get)

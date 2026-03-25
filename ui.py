@@ -1,3 +1,4 @@
+import os
 import time
 import random
 from rich.console import Console
@@ -32,7 +33,7 @@ TITULO_ASCII = r"""
 
 
 def limpiar():
-    console.clear()
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 
 def pausa(segundos: float = 1.2):
