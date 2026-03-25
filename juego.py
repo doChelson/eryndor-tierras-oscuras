@@ -1,5 +1,6 @@
 import ui
 import guardado
+import musica_manager
 from personaje import (
     CLASES, PREGUNTAS_PERSONALIDAD, CLASE_RECOMENDADA,
     crear_personaje, Item
@@ -9,6 +10,10 @@ from rich.prompt import Confirm
 
 
 def iniciar():
+    # Inicializar música
+    musica_manager.inicializar()
+    musica_manager.reproducir("menu")
+
     ui.mostrar_titulo()
     ui.pausa(0.5)
 
@@ -138,8 +143,9 @@ def _bucle_principal(personaje, estado):
     escena_actual = estado.get("escena_actual", "1_intro")
 
     while True:
-        # Auto-guardado antes de cada escena
+        # Auto-guardado y música antes de cada escena
         guardado.guardar(personaje, {**estado, "escena_actual": escena_actual})
+        musica_manager.reproducir_para_escena(escena_actual)
 
         siguiente = ejecutar_escena(escena_actual, personaje, estado)
 
@@ -171,7 +177,7 @@ def _comprobar_pausa(personaje, estado):
     """Permite al jugador ver stats, inventario o equipamiento entre escenas."""
     from rich.prompt import Prompt
     ui.console.print()
-    ui.console.print("[dim](S) Estadisticas  (I) Inventario  (E) Equipamiento  (Enter) Continuar[/dim]")
+    ui.console.print("[dim](S) Estadisticas  (I) Inventario  (E) Equipamiento  (+/-) Volumen  (Enter) Continuar[/dim]")
     respuesta = Prompt.ask("[dim]>[/dim]", default="").strip().lower()
     if respuesta == "s":
         ui.mostrar_stats(personaje)
@@ -181,6 +187,12 @@ def _comprobar_pausa(personaje, estado):
         ui.pedir_continuar()
     elif respuesta == "e":
         ui.mostrar_equipamiento(personaje)
+    elif respuesta == "+":
+        musica_manager.set_volumen(musica_manager.volumen_actual() + 0.1)
+        ui.console.print(f"  [yellow]Volumen: {int(musica_manager.volumen_actual() * 100)}%[/yellow]")
+    elif respuesta == "-":
+        musica_manager.set_volumen(musica_manager.volumen_actual() - 0.1)
+        ui.console.print(f"  [yellow]Volumen: {int(musica_manager.volumen_actual() * 100)}%[/yellow]")
 
 
 # Fix import in juego.py
